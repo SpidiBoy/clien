@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - Sistema</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css">
+
+<script>
+  if (!localStorage.getItem('token')) {
+    window.location.replace('/');
+  } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.style.visibility = 'visible';
+    });
+  }
+</script>
+</head>
+<body>
+
+<!-- ══════════════ SIDEBAR ══════════════ -->
+<aside id="sidebar">
+  <div class="sidebar-brand">
+    <span class="logo">🌋</span>
+    <span>Volcano Gym</span>
+  </div>
+  <div id="navMenu"><!-- generado dinámicamente --></div>
+  <div class="sidebar-footer">
+    <a class="nav-item" id="btnLogout">
+      <i class="bi bi-box-arrow-left"></i><span>Cerrar sesión</span>
+    </a>
+  </div>
+</aside>
+
+<!-- ══════════════ MAIN ══════════════ -->
+<div id="main">
+  <div id="topbar">
+    <button class="toggle-btn" id="toggleSidebar"><i class="bi bi-list"></i></button>
+    <div class="topbar-right">
+      <span style="font-size:13px;color:#666">Bienvenido,</span>
+      <span class="user-badge" id="topbarUser">—</span>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <!-- HOME -->
+    <div class="view active" id="view-home">
+      <h4 style="font-weight:700;color:#1a1a2e;margin-bottom:6px;">Dashboard</h4>
+      <p style="color:#888;font-size:14px;margin-bottom:24px;">Bienvenido al sistema de gestión</p>
+      <div class="row g-3" id="homeCards"><!-- generado --></div>
+    </div>
+
+    <!-- PERFILES -->
+    <div class="view" id="view-perfiles">
+      <div class="mod-header">
+        <span class="mod-title"><i class="bi bi-shield-check me-2"></i>Perfiles</span>
+        <button class="btn-save" onclick="openModal('perfil')"><i class="bi bi-plus-lg me-1"></i>Nuevo Perfil</button>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <input type="text" id="searchPerfiles" placeholder="🔍 Buscar perfil..." oninput="filtrarTabla('perfiles')">
+        </div>
+        <table>
+          <thead><tr>
+            <th>#</th><th>Nombre</th><th>Descripción</th><th>Estado</th><th>Creado</th><th>Acciones</th>
+          </tr></thead>
+          <tbody id="tbodyPerfiles"><tr class="loading-row"><td colspan="6">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- USUARIOS -->
+    <div class="view" id="view-usuarios">
+      <div class="mod-header">
+        <span class="mod-title"><i class="bi bi-people me-2"></i>Usuarios</span>
+        <button class="btn-save" onclick="openModal('usuario')"><i class="bi bi-plus-lg me-1"></i>Nuevo Usuario</button>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <input type="text" id="searchUsuarios" placeholder="🔍 Buscar usuario..." oninput="filtrarTabla('usuarios')">
+        </div>
+        <table>
+          <thead><tr>
+            <th>#</th><th>Nombre</th><th>Username</th><th>Email</th><th>Perfil</th><th>Estado</th><th>Acciones</th>
+          </tr></thead>
+          <tbody id="tbodyUsuarios"><tr class="loading-row"><td colspan="7">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div class="view" id="view-clientes">
+      <div class="mod-header">
+        <span class="mod-title"><i class="bi bi-person-badge me-2"></i>Clientes</span>
+        <button class="btn-save" onclick="openModal('cliente')"><i class="bi bi-plus-lg me-1"></i>Nuevo Cliente</button>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <input type="text" id="searchClientes" placeholder="🔍 Buscar cliente..." oninput="filtrarTabla('clientes')">
+        </div>
+        <table>
+          <thead><tr>
+            <th>#</th><th>DNI</th><th>Nombre</th><th>Teléfono</th><th>Registrado por</th><th>Estado</th><th>Acciones</th>
+          </tr></thead>
+          <tbody id="tbodyClientes"><tr class="loading-row"><td colspan="7">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ══════════════ MODAL PERFIL ══════════════ -->
+<div class="modal-overlay" id="modalPerfil">
+  <div class="modal-box">
+    <div class="modal-title" id="modalPerfilTitle">Nuevo Perfil</div>
+    <div class="alert-msg" id="alertPerfil"></div>
+    <input type="hidden" id="perfilId">
+    <div class="mb-3">
+      <div class="form-label">Nombre *</div>
+      <input class="form-control" id="perfilNombre" placeholder="Ej: Recepcionista">
+    </div>
+    <div class="mb-3">
+      <div class="form-label">Descripción</div>
+      <textarea class="form-control" id="perfilDesc" rows="2" placeholder="Descripción del perfil..."></textarea>
+    </div>
+    <div class="mb-3" id="perfilEstadoGroup" style="display:none">
+      <div class="form-label">Estado</div>
+      <select class="form-control" id="perfilEstado">
+        <option value="1">Activo</option>
+        <option value="0">Inactivo</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modalPerfil')">Cancelar</button>
+      <button class="btn-save" onclick="savePerfil()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL PERMISOS ══════════════ -->
+<div class="modal-overlay" id="modalPermisos">
+  <div class="modal-box" style="width:520px">
+    <div class="modal-title">
+      <i class="bi bi-key me-2" style="color:#7c4dff"></i>
+      Asignar Permisos al Perfil: <span id="permisoPerfilNombre" style="color:#7c4dff"></span>
+    </div>
+    <div class="alert-msg" id="alertPermisos"></div>
+    <input type="hidden" id="permisoPerfilId">
+    <div class="perm-header">
+      <span id="permisoCount">0 opciones seleccionadas</span>
+      <span class="perm-toggle" onclick="toggleTodosPermisos()">Seleccionar / Deseleccionar todo</span>
+    </div>
+    <div class="permisos-list" id="permisosLista">
+      <div style="text-align:center;padding:20px;color:#aaa">Cargando opciones...</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modalPermisos')">Cerrar</button>
+      <button class="btn-purple" onclick="savePermisos()"><i class="bi bi-check2 me-1"></i>Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL USUARIO ══════════════ -->
+<div class="modal-overlay" id="modalUsuario">
+  <div class="modal-box">
+    <div class="modal-title" id="modalUsuarioTitle">Nuevo Usuario</div>
+    <div class="alert-msg" id="alertUsuario"></div>
+    <input type="hidden" id="usuarioId">
+    <div class="row g-2 mb-2">
+      <div class="col-6">
+        <div class="form-label">Nombre *</div>
+        <input class="form-control" id="usuarioNombre" placeholder="Nombre">
+      </div>
+      <div class="col-6">
+        <div class="form-label">Apellido *</div>
+        <input class="form-control" id="usuarioApellido" placeholder="Apellido">
+      </div>
+    </div>
+    <div class="mb-2">
+      <div class="form-label">Username *</div>
+      <input class="form-control" id="usuarioUsername" placeholder="nombre_usuario">
+    </div>
+    <div class="mb-2">
+      <div class="form-label">Email *</div>
+      <input class="form-control" id="usuarioEmail" type="email" placeholder="correo@ejemplo.com">
+    </div>
+    <div class="mb-2" id="passGroup">
+      <div class="form-label">Contraseña <span id="passLabel">(requerida)</span></div>
+      <input class="form-control" id="usuarioPassword" type="password" placeholder="Mínimo 6 caracteres">
+    </div>
+    <div class="mb-2">
+      <div class="form-label">Perfil *</div>
+      <select class="form-control" id="usuarioPerfil"></select>
+    </div>
+    <div class="mb-2">
+      <div class="form-label">Alias Asesor</div>
+      <input class="form-control" id="usuarioAlias" placeholder="Alias opcional">
+    </div>
+    <div class="mb-2" id="usuarioEstadoGroup" style="display:none">
+      <div class="form-label">Estado</div>
+      <select class="form-control" id="usuarioEstado">
+        <option value="1">Activo</option>
+        <option value="0">Inactivo</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modalUsuario')">Cancelar</button>
+      <button class="btn-save" onclick="saveUsuario()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL CLIENTE ══════════════ -->
+<div class="modal-overlay" id="modalCliente">
+  <div class="modal-box">
+    <div class="modal-title" id="modalClienteTitle">Nuevo Cliente</div>
+    <div class="alert-msg" id="alertCliente"></div>
+    <input type="hidden" id="clienteId">
+    <div class="mb-2">
+      <div class="form-label">DNI *</div>
+      <input class="form-control" id="clienteDni" placeholder="Número de DNI" maxlength="15">
+    </div>
+    <div class="row g-2 mb-2">
+      <div class="col-6">
+        <div class="form-label">Nombre *</div>
+        <input class="form-control" id="clienteNombre" placeholder="Nombre">
+      </div>
+      <div class="col-6">
+        <div class="form-label">Apellido *</div>
+        <input class="form-control" id="clienteApellido" placeholder="Apellido">
+      </div>
+    </div>
+    <div class="mb-2">
+      <div class="form-label">Teléfono</div>
+      <input class="form-control" id="clienteTelefono" placeholder="Número de teléfono">
+    </div>
+    <div class="mb-2">
+      <div class="form-label">Fecha de nacimiento</div>
+      <input class="form-control" id="clienteFechaNac" type="date">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modalCliente')">Cancelar</button>
+      <button class="btn-save" onclick="saveCliente()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ CONFIRM DIALOG ══════════════ -->
+<div class="modal-overlay" id="modalConfirm">
+  <div class="modal-box" style="width:360px">
+    <div class="modal-title">⚠️ Confirmar eliminación</div>
+    <p style="color:#555;font-size:14px;" id="confirmMsg">¿Estás seguro de eliminar este registro?</p>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modalConfirm')">Cancelar</button>
+      <button class="btn-save" style="background:#c62828" id="confirmBtn">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════
+// CONFIGURACIÓN BASE
+// ══════════════════════════════════
+const TOKEN   = localStorage.getItem('token');
+const USUARIO = JSON.parse(localStorage.getItem('usuario') || '{}');
+
+// Opciones del usuario guardadas al login
+let MIS_OPCIONES = JSON.parse(localStorage.getItem('opciones') || '[]');
+
+// Datos en memoria
+let dataPerfiles = [], dataUsuarios = [], dataClientes = [];
+let todasLasOpciones = []; // para el modal de permisos
+
+// ── Configuración de módulos: ruta → metadatos del módulo
+const MODULOS_CONFIG = {
+  'home':      { icon: 'bi-speedometer2', label: 'Dashboard',  seccion: 'Principal',       color: '#e94560' },
+  'perfiles':  { icon: 'bi-shield-check',  label: 'Perfiles',   seccion: 'Administración',  color: '#7c4dff' },
+  'usuarios':  { icon: 'bi-people',        label: 'Usuarios',   seccion: 'Administración',  color: '#0f3460' },
+  'clientes':  { icon: 'bi-person-badge',  label: 'Clientes',   seccion: 'Administración',  color: '#2e7d32' },
+};
+
+// ── Init ──
+document.getElementById('topbarUser').textContent = USUARIO.nombre || 'Usuario';
+
+document.getElementById('toggleSidebar').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+});
+
+document.getElementById('btnLogout').addEventListener('click', () => {
+  localStorage.clear();
+  window.location.replace('/');
+});
+
+// ══════════════════════════════════
+// SIDEBAR DINÁMICO
+// ══════════════════════════════════
+function buildSidebar() {
+  const navMenu = document.getElementById('navMenu');
+  navMenu.innerHTML = '';
+
+  // Dashboard siempre visible
+  const homeItem = buildNavItem('home', 'bi-speedometer2', 'Dashboard');
+  navMenu.appendChild(buildSection('Principal'));
+  navMenu.appendChild(homeItem);
+
+  // Módulos según permisos
+  const opcionesAdmin = MIS_OPCIONES.filter(o =>
+    ['perfiles','usuarios'].includes(o.ruta)
+  );
+  const opcionesGestion = MIS_OPCIONES.filter(o =>
+    !['perfiles','usuarios','home','dashboard'].includes(o.ruta)
+  );
+
+  if (opcionesAdmin.length > 0) {
+    navMenu.appendChild(buildSection('Administración'));
+    opcionesAdmin.forEach(op => {
+      const cfg = MODULOS_CONFIG[op.ruta] || {};
+      navMenu.appendChild(buildNavItem(op.ruta, cfg.icon || 'bi-circle', op.nombre));
+    });
+  }
+
+  if (opcionesGestion.length > 0) {
+    navMenu.appendChild(buildSection('Gestión'));
+    opcionesGestion.forEach(op => {
+      const cfg = MODULOS_CONFIG[op.ruta] || {};
+      navMenu.appendChild(buildNavItem(op.ruta, cfg.icon || 'bi-circle', op.nombre));
+    });
+  }
+
+  // Activar home por defecto
+  homeItem.classList.add('active');
+}
+
+function buildNavItem(view, icon, label) {
+  const a = document.createElement('a');
+  a.className = 'nav-item';
+  a.dataset.view = view;
+  a.innerHTML = `<i class="bi ${icon}"></i><span>${label}</span>`;
+  a.addEventListener('click', () => goTo(view));
+  return a;
+}
+
+function buildSection(title) {
+  const div = document.createElement('div');
+  div.className = 'nav-section';
+  div.textContent = title;
+  return div;
+}
+
+// ══════════════════════════════════
+// HOME CARDS DINÁMICAS
+// ══════════════════════════════════
+function buildHomeCards() {
+  const container = document.getElementById('homeCards');
+  container.innerHTML = '';
+
+  const cardDefs = [
+    { ruta:'perfiles', color:'#7c4dff', icon:'bi-shield-check', label:'Perfiles',  countId:'countPerfiles' },
+    { ruta:'usuarios', color:'#0f3460', icon:'bi-people',        label:'Usuarios',  countId:'countUsuarios' },
+    { ruta:'clientes', color:'#2e7d32', icon:'bi-person-badge',  label:'Clientes',  countId:'countClientes' },
+  ];
+
+  cardDefs.forEach(def => {
+    const tieneAcceso = MIS_OPCIONES.some(o => o.ruta === def.ruta);
+    if (!tieneAcceso) return;
+
+    const col = document.createElement('div');
+    col.className = 'col-md-4';
+    col.innerHTML = `
+      <div class="stat-card" onclick="goTo('${def.ruta}')">
+        <div class="stat-icon" style="background:${def.color}"><i class="bi ${def.icon}"></i></div>
+        <div>
+          <div class="stat-value" id="${def.countId}">—</div>
+          <div class="stat-label">${def.label}</div>
+        </div>
+      </div>`;
+    container.appendChild(col);
+  });
+}
+
+// ══════════════════════════════════
+// NAVEGACIÓN
+// ══════════════════════════════════
+function goTo(view) {
+  // Verificar acceso (home siempre permitido)
+  if (view !== 'home') {
+    const tieneAcceso = MIS_OPCIONES.some(o => o.ruta === view);
+    if (!tieneAcceso) {
+      alert('No tienes permisos para acceder a este módulo.');
+      return;
+    }
+  }
+
+  document.querySelectorAll('.nav-item[data-view]').forEach(e => e.classList.remove('active'));
+  document.querySelector(`[data-view="${view}"]`)?.classList.add('active');
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const viewEl = document.getElementById(`view-${view}`);
+  if (viewEl) viewEl.classList.add('active');
+
+  if (view === 'perfiles') loadPerfiles();
+  if (view === 'usuarios') loadUsuarios();
+  if (view === 'clientes') loadClientes();
+}
+
+// ══════════════════════════════════
+// API HELPER
+// ══════════════════════════════════
+async function api(method, path, body) {
+  const res = await fetch(path, {
+    method,
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Error');
+  return data;
+}
+
+// ══════════════════════════════════
+// FILTRAR TABLA
+// ══════════════════════════════════
+function filtrarTabla(modulo) {
+  const q = document.getElementById(`search${cap(modulo)}`).value.toLowerCase();
+  document.querySelectorAll(`#tbody${cap(modulo)} tr`).forEach(tr => {
+    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+// ══════════════════════════════════
+// MODALES
+// ══════════════════════════════════
+function openModal(tipo) {
+  if (tipo === 'perfil')  { resetForm('perfil');  document.getElementById('modalPerfil').classList.add('open'); }
+  if (tipo === 'usuario') { resetForm('usuario'); document.getElementById('modalUsuario').classList.add('open'); cargarPerfilesSelect(); }
+  if (tipo === 'cliente') { resetForm('cliente'); document.getElementById('modalCliente').classList.add('open'); }
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function resetForm(tipo) {
+  if (tipo === 'perfil') {
+    document.getElementById('perfilId').value = '';
+    document.getElementById('perfilNombre').value = '';
+    document.getElementById('perfilDesc').value = '';
+    document.getElementById('perfilEstadoGroup').style.display = 'none';
+    document.getElementById('modalPerfilTitle').textContent = 'Nuevo Perfil';
+    document.getElementById('alertPerfil').className = 'alert-msg';
+  }
+  if (tipo === 'usuario') {
+    ['usuarioId','usuarioNombre','usuarioApellido','usuarioUsername','usuarioEmail','usuarioPassword','usuarioAlias'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('usuarioEstadoGroup').style.display = 'none';
+    document.getElementById('passLabel').textContent = '(requerida)';
+    document.getElementById('modalUsuarioTitle').textContent = 'Nuevo Usuario';
+    document.getElementById('alertUsuario').className = 'alert-msg';
+    // Al crear siempre mostrar contraseña y habilitar perfil
+    const pg = document.getElementById('passGroup');
+    if (pg) pg.style.display = 'block';
+    const ps = document.getElementById('usuarioPerfil');
+    if (ps) { ps.disabled = false; ps.title = ''; }
+  }
+  if (tipo === 'cliente') {
+    ['clienteId','clienteDni','clienteNombre','clienteApellido','clienteTelefono','clienteFechaNac'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('clienteDni').readOnly = false;
+    document.getElementById('modalClienteTitle').textContent = 'Nuevo Cliente';
+    document.getElementById('alertCliente').className = 'alert-msg';
+  }
+}
+function showAlert(id, msg, type = 'error') {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = `alert-msg ${type}`;
+}
+
+// ══════════════════════════════════
+// PERFILES
+// ══════════════════════════════════
+async function loadPerfiles() {
+  document.getElementById('tbodyPerfiles').innerHTML = '<tr class="loading-row"><td colspan="6">Cargando...</td></tr>';
+  try {
+    dataPerfiles = await api('GET', '/api/perfiles');
+    renderPerfiles(dataPerfiles);
+    const el = document.getElementById('countPerfiles');
+    if (el) el.textContent = dataPerfiles.length;
+  } catch(e) {
+    document.getElementById('tbodyPerfiles').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar</td></tr>';
+  }
+}
+
+function renderPerfiles(data) {
+  const tbody = document.getElementById('tbodyPerfiles');
+  if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Sin perfiles registrados</td></tr>'; return; }
+
+  // Perfil del usuario logueado
+  const miPerfil      = (USUARIO.perfil || '').toLowerCase();
+  const miPerfilNombre = USUARIO.perfil || '';
+  const yoSoyAdmin    = miPerfil === 'administrador';
+
+  // id_perfil del usuario logueado (viene en el JWT)
+  const miPerfilId = JSON.parse(atob(TOKEN.split('.')[1])).id_perfil;
+
+  tbody.innerHTML = data.map(p => {
+    const esAdmin      = p.nombre.toLowerCase() === 'administrador';
+    const esMiPerfil   = p.id_perfil === miPerfilId;
+
+    // Reglas de bloqueo para ELIMINAR:
+    // 1. Perfil Administrador — nunca
+    // 2. Tu propio perfil activo — nunca (te quedarías sin permisos)
+    const bloqueadoEliminar = esAdmin || esMiPerfil;
+
+    const tooltipEliminar = esAdmin
+      ? 'El perfil Administrador no puede eliminarse'
+      : esMiPerfil
+        ? 'No puedes eliminar tu propio perfil activo'
+        : 'Eliminar';
+
+    // Reglas de bloqueo para EDITAR:
+    // 1. Perfil Administrador solo lo edita otro Administrador
+    // 2. Tu propio perfil activo no puedes editarlo
+    const bloqueadoEditar = (esAdmin && !yoSoyAdmin) || esMiPerfil;
+
+    const tooltipEditar = esMiPerfil
+      ? 'No puedes editar tu propio perfil activo'
+      : (esAdmin && !yoSoyAdmin)
+        ? 'Solo un Administrador puede editar este perfil'
+        : 'Editar';
+
+    const btnEditar = bloqueadoEditar
+      ? `<button class="btn-icon" title="${tooltipEditar}" disabled style="opacity:.35;cursor:not-allowed"><i class="bi bi-pencil"></i></button>`
+      : `<button class="btn-icon" title="${tooltipEditar}" onclick="editPerfil(${p.id_perfil})"><i class="bi bi-pencil"></i></button>`;
+
+    const btnEliminar = bloqueadoEliminar
+      ? `<button class="btn-icon danger" title="${tooltipEliminar}" disabled style="opacity:.35;cursor:not-allowed"><i class="bi bi-lock"></i></button>`
+      : `<button class="btn-icon danger" title="${tooltipEliminar}" onclick="confirmDelete('perfil',${p.id_perfil},'${p.nombre}')"><i class="bi bi-trash"></i></button>`;
+
+    const badge = (esAdmin || esMiPerfil)
+      ? ` <span style="font-size:10px;color:#7c4dff;background:#ede7f6;padding:2px 7px;border-radius:20px">${esMiPerfil ? 'tu perfil' : 'protegido'}</span>`
+      : '';
+
+    return `
+    <tr>
+      <td>${p.id_perfil}</td>
+      <td><strong>${p.nombre}</strong>${badge}</td>
+      <td style="color:#666">${p.descripcion || '—'}</td>
+      <td><span class="badge-estado ${p.estado===1?'badge-activo':'badge-inactivo'}">${p.estado===1?'Activo':'Inactivo'}</span></td>
+      <td>${new Date(p.created_at).toLocaleDateString('es-PE')}</td>
+      <td style="display:flex;gap:6px;align-items:center">
+        <button class="btn-icon perm" title="Permisos" onclick="openPermisos(${p.id_perfil},'${p.nombre}')"><i class="bi bi-key"></i> Permisos</button>
+        ${btnEditar}
+        ${btnEliminar}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function editPerfil(id) {
+  const p = dataPerfiles.find(x => x.id_perfil === id);
+  if (!p) return;
+  document.getElementById('perfilId').value = id;
+  document.getElementById('perfilNombre').value = p.nombre;
+  document.getElementById('perfilDesc').value = p.descripcion || '';
+  document.getElementById('perfilEstado').value = p.estado;
+  document.getElementById('perfilEstadoGroup').style.display = 'block';
+  document.getElementById('modalPerfilTitle').textContent = 'Editar Perfil';
+  document.getElementById('alertPerfil').className = 'alert-msg';
+  document.getElementById('modalPerfil').classList.add('open');
+}
+
+async function savePerfil() {
+  const id     = document.getElementById('perfilId').value;
+  const nombre = document.getElementById('perfilNombre').value.trim();
+  const desc   = document.getElementById('perfilDesc').value.trim();
+  const estado = document.getElementById('perfilEstado').value;
+  if (!nombre) { showAlert('alertPerfil','El nombre es requerido'); return; }
+  try {
+    if (id) await api('PUT', `/api/perfiles/${id}`, { nombre, descripcion: desc, estado: Number(estado) });
+    else    await api('POST', '/api/perfiles', { nombre, descripcion: desc });
+    closeModal('modalPerfil');
+    loadPerfiles();
+  } catch(e) { showAlert('alertPerfil', e.message); }
+}
+
+// ══════════════════════════════════
+// MODAL PERMISOS
+// ══════════════════════════════════
+async function openPermisos(perfilId, perfilNombre) {
+  document.getElementById('permisoPerfilId').value = perfilId;
+  document.getElementById('permisoPerfilNombre').textContent = perfilNombre;
+  document.getElementById('alertPermisos').className = 'alert-msg';
+  document.getElementById('permisosLista').innerHTML =
+    '<div style="text-align:center;padding:20px;color:#aaa"><i class="bi bi-hourglass-split"></i> Cargando opciones...</div>';
+  document.getElementById('modalPermisos').classList.add('open');
+
+  try {
+    // Trae todas las opciones con flag tiene_permiso
+    const opciones = await api('GET', `/api/permisos/perfil/${perfilId}`);
+    todasLasOpciones = opciones;
+    renderPermisosLista(opciones);
+  } catch(e) {
+    document.getElementById('permisosLista').innerHTML =
+      `<div style="color:#c62828;padding:10px">Error: ${e.message}</div>`;
+  }
+}
+
+function renderPermisosLista(opciones) {
+  const lista = document.getElementById('permisosLista');
+  if (!opciones.length) {
+    lista.innerHTML = '<div style="text-align:center;padding:20px;color:#bbb">No hay opciones registradas en el sistema.<br>Inserta registros en la tabla <code>opciones</code>.</div>';
+    actualizarContadorPermisos();
+    return;
+  }
+  lista.innerHTML = opciones.map(op => `
+    <label class="permiso-item" for="perm_${op.id_opcion}">
+      <input type="checkbox" id="perm_${op.id_opcion}" value="${op.id_opcion}"
+             ${op.tiene_permiso ? 'checked' : ''}
+             onchange="actualizarContadorPermisos()">
+      <div>
+        <div class="perm-nombre">${op.nombre}</div>
+        <div class="perm-ruta">${op.ruta}</div>
+      </div>
+    </label>`).join('');
+  actualizarContadorPermisos();
+}
+
+function actualizarContadorPermisos() {
+  const total    = document.querySelectorAll('#permisosLista input[type=checkbox]').length;
+  const checked  = document.querySelectorAll('#permisosLista input[type=checkbox]:checked').length;
+  document.getElementById('permisoCount').textContent = `${checked} de ${total} opciones seleccionadas`;
+}
+
+function toggleTodosPermisos() {
+  const checks = document.querySelectorAll('#permisosLista input[type=checkbox]');
+  const todosChecked = [...checks].every(c => c.checked);
+  checks.forEach(c => c.checked = !todosChecked);
+  actualizarContadorPermisos();
+}
+
+async function savePermisos() {
+  const perfilId = document.getElementById('permisoPerfilId').value;
+  const seleccionados = [...document.querySelectorAll('#permisosLista input[type=checkbox]:checked')]
+    .map(c => Number(c.value));
+  try {
+    await api('PUT', `/api/permisos/perfil/${perfilId}`, { opciones: seleccionados });
+    showAlert('alertPermisos', '✅ Permisos guardados correctamente', 'success');
+    setTimeout(() => closeModal('modalPermisos'), 1200);
+  } catch(e) {
+    showAlert('alertPermisos', e.message);
+  }
+}
+
+// ══════════════════════════════════
+// USUARIOS
+// ══════════════════════════════════
+async function cargarPerfilesSelect() {
+  const sel = document.getElementById('usuarioPerfil');
+  sel.innerHTML = '<option value="">Seleccionar perfil...</option>';
+  try {
+    const lista = dataPerfiles.length ? dataPerfiles : await api('GET', '/api/perfiles');
+    lista.filter(p => p.estado === 1).forEach(p => {
+      sel.innerHTML += `<option value="${p.id_perfil}">${p.nombre}</option>`;
+    });
+  } catch(e) {}
+}
+
+async function loadUsuarios() {
+  document.getElementById('tbodyUsuarios').innerHTML = '<tr class="loading-row"><td colspan="7">Cargando...</td></tr>';
+  try {
+    dataUsuarios = await api('GET', '/api/usuarios');
+    renderUsuarios(dataUsuarios);
+    const el = document.getElementById('countUsuarios');
+    if (el) el.textContent = dataUsuarios.length;
+  } catch(e) {
+    document.getElementById('tbodyUsuarios').innerHTML = '<tr class="empty-row"><td colspan="7">Error al cargar</td></tr>';
+  }
+}
+
+function renderUsuarios(data) {
+  const tbody = document.getElementById('tbodyUsuarios');
+  if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Sin usuarios registrados</td></tr>'; return; }
+
+  // Perfil del usuario logueado (guardado en localStorage al hacer login)
+  const miId          = JSON.parse(atob(TOKEN.split('.')[1])).id;
+  const miPerfil      = (USUARIO.perfil || '').toLowerCase();
+  const yoSoyAdmin    = miPerfil === 'administrador';
+
+  tbody.innerHTML = data.map(u => {
+    const targetPerfil  = (u.perfil || '').toLowerCase();
+    const mismosPerfil  = targetPerfil === miPerfil;
+    const targetEsAdmin = targetPerfil === 'administrador';
+    const esSelf        = u.id_usuario === miId;
+
+    // ── REGLAS ELIMINAR ──
+    // 1. No puede eliminarse a sí mismo
+    // 2. Mismo perfil no pueden eliminarse entre sí
+    // 3. Nadie puede eliminar a un Administrador
+    const bloqueadoEliminar = esSelf || mismosPerfil || targetEsAdmin;
+
+    const tooltipEliminar = esSelf
+      ? 'No puedes eliminarte a ti mismo'
+      : mismosPerfil
+        ? `Los usuarios con perfil "${u.perfil}" no pueden eliminarse entre sí`
+        : targetEsAdmin
+          ? 'No tienes permisos para eliminar a un Administrador'
+          : 'Eliminar';
+
+    // ── REGLAS EDITAR ──
+    // 1. No-Admin no puede editar a un Administrador
+    // 2. Mismo perfil no pueden editarse entre sí (excepto a sí mismo)
+    const bloqueadoEditar = (!yoSoyAdmin && targetEsAdmin) ||
+                            (mismosPerfil && !esSelf);
+
+    const tooltipEditar = (!yoSoyAdmin && targetEsAdmin)
+      ? 'No tienes permisos para editar a un Administrador'
+      : (mismosPerfil && !esSelf)
+        ? `Los usuarios con perfil "${u.perfil}" no pueden editarse entre sí`
+        : 'Editar';
+
+    const btnEditar = bloqueadoEditar
+      ? `<button class="btn-icon" title="${tooltipEditar}" disabled style="opacity:.35;cursor:not-allowed"><i class="bi bi-pencil"></i></button>`
+      : `<button class="btn-icon" title="${tooltipEditar}" onclick="editUsuario(${u.id_usuario})"><i class="bi bi-pencil"></i></button>`;
+
+    const btnEliminar = bloqueadoEliminar
+      ? `<button class="btn-icon danger" title="${tooltipEliminar}" disabled style="opacity:.35;cursor:not-allowed"><i class="bi bi-lock"></i></button>`
+      : `<button class="btn-icon danger" title="${tooltipEliminar}" onclick="confirmDelete('usuario',${u.id_usuario},'${u.nombre}')"><i class="bi bi-trash"></i></button>`;
+
+    const badge = (mismosPerfil && !esSelf) || targetEsAdmin
+      ? ` <span style="font-size:10px;color:#7c4dff;background:#ede7f6;padding:2px 7px;border-radius:20px">${targetEsAdmin ? 'protegido' : 'mismo perfil'}</span>`
+      : '';
+
+    return `
+    <tr>
+      <td>${u.id_usuario}</td>
+      <td><strong>${u.nombre} ${u.apellido}</strong>${badge}</td>
+      <td><code>${u.username}</code></td>
+      <td>${u.email}</td>
+      <td><span class="badge-perfil">${u.perfil}</span></td>
+      <td><span class="badge-estado ${u.estado===1?'badge-activo':'badge-inactivo'}">${u.estado===1?'Activo':'Inactivo'}</span></td>
+      <td style="display:flex;gap:6px;align-items:center">
+        ${btnEditar}
+        ${btnEliminar}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function editUsuario(id) {
+  const u = dataUsuarios.find(x => x.id_usuario === id);
+  if (!u) return;
+
+  // Protegido = cualquier usuario con perfil Administrador
+  const esAdmin = u.perfil?.toLowerCase() === 'administrador';
+
+  document.getElementById('usuarioId').value = id;
+  document.getElementById('usuarioNombre').value = u.nombre;
+  document.getElementById('usuarioApellido').value = u.apellido;
+  document.getElementById('usuarioUsername').value = u.username;
+  document.getElementById('usuarioEmail').value = u.email;
+  document.getElementById('usuarioPassword').value = '';
+  document.getElementById('usuarioAlias').value = u.alias_asesor || '';
+  document.getElementById('passLabel').textContent = '(dejar vacío para no cambiar)';
+  document.getElementById('modalUsuarioTitle').textContent = 'Editar Usuario';
+  document.getElementById('alertUsuario').className = 'alert-msg';
+
+  const estadoGroup   = document.getElementById('usuarioEstadoGroup');
+  const perfilSelect  = document.getElementById('usuarioPerfil');
+  const passGroup     = document.getElementById('passGroup');
+  const yoSoyAdmin    = (USUARIO.perfil || '').toLowerCase() === 'administrador';
+  const mismosPerfil  = (USUARIO.perfil || '').toLowerCase() === (u.perfil || '').toLowerCase();
+  const esSelfEdit    = u.id_usuario === JSON.parse(atob(TOKEN.split('.')[1])).id;
+
+  // Si es admin target: ocultar estado y bloquear perfil
+  if (esAdmin) {
+    estadoGroup.style.display  = 'none';
+    perfilSelect.disabled      = true;
+    perfilSelect.title         = 'No se puede cambiar el perfil del Administrador';
+  } else {
+    document.getElementById('usuarioEstado').value = u.estado;
+    estadoGroup.style.display  = 'block';
+    perfilSelect.disabled      = false;
+    perfilSelect.title         = '';
+  }
+
+  // Ocultar contraseña si:
+  // - No-Admin intenta editar a un Admin
+  // - Mismo perfil intenta editar a otro del mismo perfil (que no sea sí mismo)
+  const ocultarPass = (!yoSoyAdmin && esAdmin) || (mismosPerfil && !esSelfEdit);
+  if (passGroup) passGroup.style.display = ocultarPass ? 'none' : 'block';
+
+  cargarPerfilesSelect().then(() => {
+    document.getElementById('usuarioPerfil').value = u.id_perfil || '';
+  });
+  document.getElementById('modalUsuario').classList.add('open');
+}
+
+async function saveUsuario() {
+  const id       = document.getElementById('usuarioId').value;
+  const nombre   = document.getElementById('usuarioNombre').value.trim();
+  const apellido = document.getElementById('usuarioApellido').value.trim();
+  const username = document.getElementById('usuarioUsername').value.trim();
+  const email    = document.getElementById('usuarioEmail').value.trim();
+  const password = document.getElementById('usuarioPassword').value;
+  const id_perfil= document.getElementById('usuarioPerfil').value;
+  const alias    = document.getElementById('usuarioAlias').value.trim();
+  const estado   = document.getElementById('usuarioEstado').value;
+  if (!nombre||!apellido||!username||!email||!id_perfil) { showAlert('alertUsuario','Completa todos los campos requeridos'); return; }
+  if (!id && !password) { showAlert('alertUsuario','La contraseña es requerida para nuevos usuarios'); return; }
+  try {
+    const body = { nombre, apellido, username, email, id_perfil: Number(id_perfil), alias_asesor: alias||null, estado: Number(estado) };
+    if (password) body.password = password;
+    if (id) await api('PUT', `/api/usuarios/${id}`, body);
+    else    await api('POST', '/api/usuarios', body);
+    closeModal('modalUsuario');
+    loadUsuarios();
+  } catch(e) { showAlert('alertUsuario', e.message); }
+}
+
+// ══════════════════════════════════
+// CLIENTES
+// ══════════════════════════════════
+async function loadClientes() {
+  document.getElementById('tbodyClientes').innerHTML = '<tr class="loading-row"><td colspan="7">Cargando...</td></tr>';
+  try {
+    dataClientes = await api('GET', '/api/clientes');
+    renderClientes(dataClientes);
+    const el = document.getElementById('countClientes');
+    if (el) el.textContent = dataClientes.length;
+  } catch(e) {
+    document.getElementById('tbodyClientes').innerHTML = '<tr class="empty-row"><td colspan="7">Error al cargar</td></tr>';
+  }
+}
+
+function renderClientes(data) {
+  const tbody = document.getElementById('tbodyClientes');
+  if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Sin clientes registrados</td></tr>'; return; }
+  tbody.innerHTML = data.map(c => `
+    <tr>
+      <td>${c.id_cliente}</td>
+      <td><code>${c.dni}</code></td>
+      <td><strong>${c.nombre} ${c.apellido}</strong></td>
+      <td>${c.telefono||'—'}</td>
+      <td style="color:#666;font-size:12px">${c.registrado_por}</td>
+      <td><span class="badge-estado ${c.activo?'badge-activo':'badge-inactivo'}">${c.activo?'Activo':'Inactivo'}</span></td>
+      <td>
+        <button class="btn-icon me-1" title="Editar" onclick="editCliente(${c.id_cliente})"><i class="bi bi-pencil"></i></button>
+        <button class="btn-icon danger" title="Eliminar" onclick="confirmDelete('cliente',${c.id_cliente},'${c.nombre}')"><i class="bi bi-trash"></i></button>
+      </td>
+    </tr>`).join('');
+}
+
+function editCliente(id) {
+  const c = dataClientes.find(x => x.id_cliente === id);
+  if (!c) return;
+  document.getElementById('clienteId').value = id;
+  document.getElementById('clienteDni').value = c.dni;
+  document.getElementById('clienteDni').readOnly = true;
+  document.getElementById('clienteNombre').value = c.nombre;
+  document.getElementById('clienteApellido').value = c.apellido;
+  document.getElementById('clienteTelefono').value = c.telefono || '';
+  document.getElementById('clienteFechaNac').value = c.fecha_nacimiento ? c.fecha_nacimiento.split('T')[0] : '';
+  document.getElementById('modalClienteTitle').textContent = 'Editar Cliente';
+  document.getElementById('alertCliente').className = 'alert-msg';
+  document.getElementById('modalCliente').classList.add('open');
+}
+
+async function saveCliente() {
+  const id       = document.getElementById('clienteId').value;
+  const dni      = document.getElementById('clienteDni').value.trim();
+  const nombre   = document.getElementById('clienteNombre').value.trim();
+  const apellido = document.getElementById('clienteApellido').value.trim();
+  const tel      = document.getElementById('clienteTelefono').value.trim();
+  const fnac     = document.getElementById('clienteFechaNac').value;
+  if (!dni||!nombre||!apellido) { showAlert('alertCliente','DNI, nombre y apellido son requeridos'); return; }
+  try {
+    if (id) await api('PUT', `/api/clientes/${id}`, { nombre, apellido, telefono: tel||null, fecha_nacimiento: fnac||null });
+    else    await api('POST', '/api/clientes', { dni, nombre, apellido, telefono: tel||null, fecha_nacimiento: fnac||null });
+    closeModal('modalCliente');
+    document.getElementById('clienteDni').readOnly = false;
+    loadClientes();
+  } catch(e) { showAlert('alertCliente', e.message); }
+}
+
+// ══════════════════════════════════
+// CONFIRM DELETE
+// ══════════════════════════════════
+function confirmDelete(tipo, id, nombre) {
+  document.getElementById('confirmMsg').textContent = `¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`;
+  document.getElementById('confirmBtn').onclick = () => doDelete(tipo, id);
+  document.getElementById('modalConfirm').classList.add('open');
+}
+async function doDelete(tipo, id) {
+  try {
+    const paths = { perfil:'perfiles', usuario:'usuarios', cliente:'clientes' };
+    await api('DELETE', `/api/${paths[tipo]}/${id}`);
+    closeModal('modalConfirm');
+    if (tipo==='perfil')  loadPerfiles();
+    if (tipo==='usuario') loadUsuarios();
+    if (tipo==='cliente') loadClientes();
+  } catch(e) { alert(e.message); }
+}
+
+// Cerrar modales al click fuera
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// ══════════════════════════════════
+// CARGA INICIAL
+// ══════════════════════════════════
+(async () => {
+  // Si no tenemos opciones en localStorage, pedirlas al servidor
+  if (!MIS_OPCIONES.length) {
+    try {
+      MIS_OPCIONES = await api('GET', '/api/permisos/mis-opciones');
+      localStorage.setItem('opciones', JSON.stringify(MIS_OPCIONES));
+    } catch(e) {
+      console.warn('No se pudieron cargar las opciones:', e.message);
+    }
+  }
+
+  buildSidebar();
+  buildHomeCards();
+
+  // Cargar contadores del home según acceso
+  try {
+    if (MIS_OPCIONES.some(o => o.ruta === 'perfiles')) {
+      dataPerfiles = await api('GET', '/api/perfiles');
+      const el = document.getElementById('countPerfiles');
+      if (el) el.textContent = dataPerfiles.length;
+    }
+  } catch(e) {}
+  try {
+    if (MIS_OPCIONES.some(o => o.ruta === 'usuarios')) {
+      dataUsuarios = await api('GET', '/api/usuarios');
+      const el = document.getElementById('countUsuarios');
+      if (el) el.textContent = dataUsuarios.length;
+    }
+  } catch(e) {}
+  try {
+    if (MIS_OPCIONES.some(o => o.ruta === 'clientes')) {
+      dataClientes = await api('GET', '/api/clientes');
+      const el = document.getElementById('countClientes');
+      if (el) el.textContent = dataClientes.length;
+    }
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>
